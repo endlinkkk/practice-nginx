@@ -9,7 +9,6 @@ from main.app.services.files.base import BaseFileService
 @dataclass
 class UploadFileService(BaseFileService):
     _repository: LocalFileRepository
-    file: FastAPIFileAdapter
 
     def save_file(self, file: IFile):
         self._repository.add_file(file)

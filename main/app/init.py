@@ -22,7 +22,6 @@ def _init_container() -> Container:
     def create_file_service() -> UploadFileService:
         return UploadFileService(
             _repository=container.resolve(LocalFileRepository),
-            file=FastAPIFileAdapter
         )
     
     container.register(

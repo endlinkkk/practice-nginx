@@ -9,7 +9,7 @@ from main.app.init import init_container
 from main.app.services.files.files import UploadFileService
 
 
-router = APIRouter()
+router = APIRouter(tags=['Files'])
 
 
 @router.get("/files", status_code=status.HTTP_200_OK, description="Get all files")
