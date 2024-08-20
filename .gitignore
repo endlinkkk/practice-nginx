@@ -368,3 +368,5 @@ $RECYCLE.BIN/
 
 uploads/
 !uploads/.gitkeep
+
+*.txt
