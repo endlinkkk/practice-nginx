@@ -3,8 +3,8 @@ from enum import Enum
 
 
 class fileStatusEnum(str, Enum):
-    clean = 'clean'
-    infected = 'infected'
+    clean = "clean"
+    infected = "infected"
 
 
 class SFile(BaseModel):

@@ -1,73 +1,111 @@
 import os
-import subprocess
 import requests
 import logging
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-class ProxyHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        if self.path == '/api/upload':
-            file_path = self.headers.get('X-File-Name')
-            logging.info(f'Received upload request for file: {file_path}')
-            
-            if file_path:
-                scan_result = self.scan_file(file_path)
-                status = 'clean' if scan_result else 'infected'
-                logging.info(f'Scan result for {file_path}: {status}')
-                
-                if scan_result:
-                    self.forward_file(file_path)
-                    logging.info(f'Forwarded file {file_path} to main service.')
-                
-                self.send_result(file_path, status)
-                
-                if not scan_result:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                        logging.warning(f'Removed infected file: {file_path}')
-                    else:
-                        logging.error(f'File not found for removal: {file_path}')
-            else:
-                logging.error('No file name provided in the request headers.')
-                self.send_response(400)
-                self.end_headers()
-                self.wfile.write(b'File name not provided')
+
+app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    file_path = f"/tmp/{file.filename}"
+    logging.info(f"Received upload request for file: {file.filename}")
+
+    with open(file_path, "wb") as f:
+        content = file.file.read()
+        f.write(content)
+
+    scan_result = scan_file(file_path)
+    status = "clean" if scan_result else "infected"
+    logging.info(f"Scan result for {file_path}: {status}")
+
+    if scan_result:
+        forward_file(file_path)
+        logging.info(f"Forwarded file {file_path} to main service.")
+
+    send_result(file_path, status)
+
+    if not scan_result:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logging.warning(f"Removed infected file: {file_path}")
         else:
-            logging.info(f'Received: {self.path}')
+            logging.error(f"File not found for removal: {file_path}")
 
-    def scan_file(self, file_path):
-        logging.info(f'Scanning file: {file_path}')
-        result = subprocess.run(['clamscan', file_path], capture_output=True, text=True)
-        logging.debug(f'Scan output: {result.stdout}')
-        return 'Infected' not in result.stdout
+    return JSONResponse(content={"message": "File processed"}, status_code=200)
 
-    def forward_file(self, file_path):
-        logging.info(f'Forwarding file: {file_path}')
-        with open(file_path, 'rb') as f:
-            response = requests.post('http://nginx-main:88/api/upload', files={'file': f})
-            if response.status_code == 200:
-                logging.info(f'Successfully forwarded file: {file_path}')
-            else:
-                logging.error(f'Failed to forward file: {file_path}, status code: {response.status_code}')
 
-    def send_result(self, file_path, status):
-        filename = os.path.basename(file_path)
-        logging.info(f'Sending scan result for {filename}: {status}')
-        
-        response = requests.post('http://nginx-main:88/api/file_status', json={'filename': filename, 'status': status})
-        if response.status_code in [200, 201]:
-            logging.info(f'Successfully sent status for {filename}')
+def scan_file(file_path):
+    try:
+        with open(file_path, "rb") as file:
+            content = file.read()
+
+        suspicious_patterns = [
+            b"virus",
+            b"malware",
+            b"trojan",
+            b"exec(",
+            b"system(",
+            b"<script",
+            b"eval(",
+        ]
+
+        for pattern in suspicious_patterns:
+            if pattern in content.lower():
+                return False  # Файл подозрительный
+
+        return True  # Файл чистый
+    except Exception as e:
+        print(f"Error scanning file: {e}")
+        return False
+
+
+def forward_file(file_path):
+    logging.info(f"Forwarding file: {file_path}")
+    with open(file_path, "rb") as f:
+        response = requests.post("http://nginx-main:88/api/upload", files={"file": f})
+        if response.status_code == 201:
+            logging.info(f"Successfully forwarded file: {file_path}")
         else:
-            logging.error(f'Failed to send status for {filename}, status code: {response.status_code}')
-
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'File processed')
+            logging.error(
+                f"Failed to forward file: {file_path}, status code: {response.status_code}"
+            )
 
 
-logging.info('Starting HTTP server on port 8010...')
-httpd = HTTPServer(('', 8010), ProxyHandler)
-httpd.serve_forever()
+def send_result(file_path, status):
+    filename = os.path.basename(file_path)
+    logging.info(f"Sending scan result for {filename}: {status}")
+
+    response = requests.post(
+        "http://nginx-main:88/api/file_status",
+        json={"filename": filename, "status": status},
+    )
+    if response.status_code in [200, 201]:
+        logging.info(f"Successfully sent status for {filename}")
+    else:
+        logging.error(
+            f"Failed to send status for {filename}, status code: {response.status_code}"
+        )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    logging.info("Starting FastAPI server on port 8010...")
+    uvicorn.run(app, host="0.0.0.0", port=8010)

@@ -11,24 +11,20 @@ from main.app.settings.config import Settings, get_settings
 def init_container() -> Container:
     return _init_container()
 
+
 def _init_container() -> Container:
     container = Container()
 
     def create_file_repository() -> LocalFileRepository:
         settings: Settings = container.resolve(Settings)
         return LocalFileRepository(path=settings.UPLOAD_FILE_PATH)
-    
 
     def create_file_service() -> FileService:
         return FileService(
             _repository=container.resolve(LocalFileRepository),
         )
-    
-    container.register(
-        service=Settings,
-        factory=get_settings,
-        scope=Scope.singleton
-    )
+
+    container.register(service=Settings, factory=get_settings, scope=Scope.singleton)
 
     container.register(
         service=LocalFileRepository,

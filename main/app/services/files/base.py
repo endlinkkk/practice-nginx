@@ -10,5 +10,4 @@ class BaseFileService(ABC):
     _repository: BaseFileRepository
 
     @abstractmethod
-    def save_file(file: IFile):
-        ...
+    def save_file(file: IFile): ...
