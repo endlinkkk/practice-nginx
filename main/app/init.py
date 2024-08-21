@@ -1,9 +1,9 @@
 from functools import lru_cache
 from punq import Container, Scope
 
-from main.app.application.adapters.files.files import FastAPIFileAdapter
+
 from main.app.repositories.files.memory import LocalFileRepository
-from main.app.services.files.files import UploadFileService
+from main.app.services.files.files import FileService
 from main.app.settings.config import Settings, get_settings
 
 
@@ -19,8 +19,8 @@ def _init_container() -> Container:
         return LocalFileRepository(path=settings.UPLOAD_FILE_PATH)
     
 
-    def create_file_service() -> UploadFileService:
-        return UploadFileService(
+    def create_file_service() -> FileService:
+        return FileService(
             _repository=container.resolve(LocalFileRepository),
         )
     
@@ -37,7 +37,7 @@ def _init_container() -> Container:
     )
 
     container.register(
-        service=UploadFileService,
+        service=FileService,
         factory=create_file_service,
         scope=Scope.singleton,
     )

@@ -13,6 +13,7 @@ punq = "^0.7.0"
 uvicorn = "^0.30.6"
 python-multipart = "^0.0.9"
 pydantic-settings = "^2.4.0"
+requests = "^2.32.3"
 
 
 [build-system]

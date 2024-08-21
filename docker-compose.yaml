@@ -1,0 +1,16 @@
+services:
+  main:
+    build: 
+      context: .
+      dockerfile: main/Dockerfil
+      args:
+        - PYPROJECT_TOML_PATH=../pyproject.toml
+      
+
+    container_name: main-app
+    ports:
+      - 80:80
+    # volumes:
+    #   - /main/uploads/:/app/uploads
+
+  
