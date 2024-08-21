@@ -1,2 +1,4 @@
-local-start: `uvicorn --factory main.app.application.api.main:create_app --reload`
-docker-start: `docker-compose up -d`
+start: `docker-compose up`
+
+link: http://localhost/api/docs
+

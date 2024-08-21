@@ -10,8 +10,7 @@ services:
     container_name: main-app
     ports:
       - 8000:8000
-    # volumes:
-    #   - /main/uploads/:/app/uploads
+
 
   nginx-main:
     image: nginx

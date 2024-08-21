@@ -4,7 +4,7 @@ from fastapi import UploadFile
 from punq import Container
 
 from main.app.application.adapters.files.files import FastAPIFileAdapter
-from main.app.application.api.files.schemas import SFile, SFileInfo
+from main.app.application.api.files.schemas import SFileInfo
 from main.app.init import init_container
 from main.app.services.files.files import FileService
 from main.app.services.files.utils import (
@@ -39,9 +39,4 @@ def post_file_status_handler(file_info: SFileInfo):
     create_a_record_of_the_file_status(file_info.filename, file_info.status)
 
 
-# @router.get(
-#     "/files/{file_name}",
-#     status_code=status.HTTP_200_OK,
-#     description="Get file by filename",
-# )
-# def get_file_by_filename_handler(file_name: str) -> SFile: ...
+
